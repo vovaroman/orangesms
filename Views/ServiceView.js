@@ -15,7 +15,9 @@ export default class ServiceView extends React.Component{
                         linkOnCaptcha : '',
                         messageText: 'Text message',
                         From : 'Your Name',
-                        captchaValue: 'Enter captcha' };
+                        captchaValue: 'Enter captcha',
+                        cookie: ''
+                    };
     }
 
     render(){
@@ -34,8 +36,8 @@ export default class ServiceView extends React.Component{
             window.postMessage = patchedPostMessage;
           };
           const patchPostMessageJsCode = '(' + String(patchPostMessageFunction) + ')();' + 
-          "setTimeout(function(){ window.postMessage(window.document.documentElement.outerHTML, '*'); },1000);";
-          const JsCode = 'document.addEventListener("message", function(data) {' +
+          "setTimeout(function(){ window.postMessage(window.document.documentElement.outerHTML + 'cookieValue: '+ window.document.cookie + '\"', '*'); },1000);";
+          const cookieJSHandlerCode = 'document.addEventListener("message", function(data) {' +
             'document.cookie=`cookiesName=${data.data};'+
         '})'
         return( 
@@ -81,22 +83,25 @@ export default class ServiceView extends React.Component{
                             style = {styles.browserVisibleFalse}
                             javaScriptEnabled={true}
                             source={{uri: 'https://www.orangetext.md'}}
-                            injectedJavaScript={patchPostMessageJsCode}
+                            injectedJavaScript={patchPostMessageJsCode} // + cookieJSHandlerCode}
                             //injectedJavaScript={" setTimeout(function(){ window.postMessage(window.document.documentElement.outerHTML, '*'); },1000); "} 
                             onMessage={ 
                                 (event) => { 
+                                    //console.log(event.nativeEvent.data)
                                     const data = orange.GetTokenID(event.nativeEvent.data)
+                                    const cookie = orange.GetCookie(event.nativeEvent.data)
                                     this.state.TokenID = data.token
+                                    this.state.cookie = cookie
                                     this.state.linkOnCaptcha = 'https://orangetext.md' + data.imgLink 
                                     
-                                    console.log(this.state.linkOnCaptcha)
+                                    //console.log(this.state.linkOnCaptcha)
                                     this.forceUpdate()
                                     
                                     
                                 } //console.log(event.nativeEvent.data)
                             }
                             onReceivedError = { 
-                                error => {console.log(error)
+                                error => {//console.log(error)
                                 }
                             } 
                         />
