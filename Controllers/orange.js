@@ -39,7 +39,7 @@ export default class Orange{
       }
       
       var response = fetch('https://www.orangetext.md/ro', {
-        method: 'POST',
+        method: 'post',
         body: serializeJSON({
             'MIME Type': 'application/x-www-form-urlencoded',
             'TokenId' : String(state.TokenID),
