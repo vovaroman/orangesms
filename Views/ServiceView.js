@@ -2,37 +2,30 @@ import React from 'react';
 import { StyleSheet, Text, View, TextInput, Button, Alert} from 'react-native';
 import Settings from '../settings'
 import Orange from '../Controllers/orange'
-import { WebView, Image } from 'react-native';
+import { WebView, Image, ScrollView } from 'react-native';
 import AsyncImage from './AsyncImage'
 //<Text> {Settings.Orange.name} </Text>
 export default class ServiceView extends React.Component{
 
     constructor(props) {
         super(props);
-        this.state = { htmlReady: false };
+        this.state = { linkReady: false,
+                        };
         this.webview = null;
+        this.captchaWebView = null;
     }
 
-    getHTMLCode() {
-        //const captcha = /src="(\/captcha\/[a-zA-Z0-9&_.-[a-zA-Z0-9&;_.-]*)"/.exec(document.documentElement.outerHTML)[1]
-        
-        const data = 
-        "var parent = document.getElementsByClassName('form-group form-inline');" +
-        "var link = parent[0].children[1].getAttribute('src');" +
-        'document.location = link;'//"https://google.md/" + link;' 
-        //'let captcha = /src="(\/captcha\/[a-zA-Z0-9&_.-[a-zA-Z0-9&;_.-]*)"/;' + 
-        //'console.log(captcha);' +
-        
-        //'let link = captcha.exec(document.documentElement.outerHTML)[1];' +
-        
-        //'document.getElementById("Message").value = captcha.exec(document.documentElement.outerHTML)[1];'
-        //'document.location = "https://orangetext.md/" + captcha' 
-        
-        console.log(data)
-        
+    getLinkOnCaptcha() {
+        const data =     
+        //"$(document).ready(function(){" +
+        //'( window ).on( "load", function() {' +
+        '$(function() {'+
+            "var parent = document.getElementsByClassName('form-group form-inline');" +
+            "var link = parent[0].children[1].getAttribute('src');" +
+            "postMessage(link); " +
+        "});" 
         this.webview.injectJavaScript(data)
-        
-        this.state.htmlReady = true
+        this.state.linkReady = true
     }
 
     render(){
@@ -51,42 +44,68 @@ export default class ServiceView extends React.Component{
         return( 
             <View style={styles.mainContainer}>
                 <View style={styles.container}>
-                    
-                    <WebView
-                        //style = {styles.browserVisibleFalse}
-                        style= {{width:400,height:50}}
-                        javaScriptEnabled={true}
-                        injectedJavaScript={
-                            patchPostMessageJsCode
-                        }
-                        source={{uri: 'https://www.orangetext.md'}}
-                        ref={( WebView ) => this.webview = WebView}
-                        onMessage={
-                            (event) => {
-                                console.log(event.nativeEvent.data)
-                                if(this.state.htmlReady)
-                                {
-                                    console.log(event.nativeEvent.data)
-                                }    
+                    <View style={{display:'none'}}>
+                        <WebView
+                            style={{width:0,height:0}}
+                            javaScriptEnabled={true}
+                            injectedJavaScript={
+                                patchPostMessageJsCode
                             }
-                        }
+                            source={{uri: 'https://www.orangetext.md'}}
+                            ref={( WebView ) => this.webview = WebView}
+                            onLoad={ () => this.getLinkOnCaptcha()}
+                            onMessage={(event) => {
+                                    if(this.state.linkReady == true){
+                                    const captchaLink = 'document.location = "https://www.orangetext.md'+ event.nativeEvent.data + '";'
+                                    this.captchaWebView.injectJavaScript(captchaLink)
+                                    console.log('https://www.orangetext.md'+event.nativeEvent.data)
+                                    }
+                                }                          
+                            } 
+                        />
+                    </View>
+                    <Text style={{fontSize: 20}}>Captcha Image: </Text>
+                    <View style={{height:50,width:400}}>
+                    <WebView
+                        automaticallyAdjustContentInsets={true}
+                        javaScriptEnabled={true}
+                        ref={( WebView ) => this.captchaWebView = WebView}
+                    />
+                    </View>
+                    <Text style={{fontSize: 20}}> Phone number </Text>
+                    <TextInput
+                        style={{height: 40, borderColor: 'gray', borderWidth: 1, width:200}}
+                        onChangeText={(To) => this.setState({To})}
+                        value={this.state.To}
+                    />
+                    <Text style={{fontSize: 20}}> From </Text>
+                    <TextInput
+                        style={{height: 40, borderColor: 'gray', borderWidth: 1, width:200}}
+                        onChangeText={(from) => this.setState({from})}
+                        value={this.state.from}
+                    />
+                    <Text style={{fontSize: 20}}> Message </Text>
+                    <TextInput
+                        style={{height: 40, borderColor: 'gray', borderWidth: 1, width:200}}
+                        onChangeText={(mess) => this.setState({mess})}
+                        value={this.state.mess}
+                    />
+                    <Text style={{fontSize: 20}}> Captcha Value </Text>
+                    <TextInput
+                        style={{height: 40, borderColor: 'gray', borderWidth: 1, width:200}}
+                        onChangeText={(captchaVal) => this.setState({captchaVal})}
+                        value={this.state.captchaVal}
                     />
                     
-                    <Button     
-                        onPress={ () => {
-                            this.getHTMLCode()
-                            }
-                        }   
-                        title='get html code'
-                    /> 
-
 
                     <Button     
                         onPress={ () => {
+                            console.log(this.state)
                             this.webview.injectJavaScript(
-                                'document.getElementById("From").value = "My value";'+
-                                'document.getElementById("Msisdn").value = "069646676";'+
-                                'document.getElementById("Message").value = "message";' +
+                                'document.getElementById("From").value = "'+ this.state.from+ '";'+
+                                'document.getElementById("Msisdn").value = "'+ this.state.To+ '";'+
+                                'document.getElementById("Message").value = "'+ this.state.mess + '";' +
+                                'document.getElementById("Captcha").value = "' + this.state.captchaVal + '";' +
                                 'document.getElementById("btnOK").click();'
                             )
                         }}
@@ -106,7 +125,7 @@ const styles = {
     },
     container: {
        flexDirection: 'column',
-       justifyContent: 'space-around',
+       justifyContent: 'center',
        alignItems: 'center',
        backgroundColor: '#ffffff',
        height: 600
